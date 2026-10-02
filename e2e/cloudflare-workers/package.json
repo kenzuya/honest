@@ -1,0 +1,16 @@
+{
+	"name": "honestjs-e2e-cloudflare-workers",
+	"private": true,
+	"type": "module",
+	"description": "Runs the built honestjs package inside workerd (the Cloudflare Workers runtime)",
+	"scripts": {
+		"test": "node --test workers.e2e.mjs",
+		"dev": "wrangler dev"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20260702.1",
+		"miniflare": "^4.20260730.0",
+		"typescript": "^5.9.3",
+		"wrangler": "^4.147.0"
+	}
+}

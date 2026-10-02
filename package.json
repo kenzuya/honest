@@ -58,6 +58,7 @@
 		"test": "bun test",
 		"test:watch": "bun test --watch",
 		"test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov",
+		"test:workers": "bun run build && cd e2e/cloudflare-workers && bun install --frozen-lockfile && bun run test",
 		"build": "bun run clean && bun build ./src/index.ts --outdir=dist --target=node --minify --external hono --external reflect-metadata && bun run build:types",
 		"build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
 		"lint": "eslint .",
