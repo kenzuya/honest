@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
 import { ErrorHandler } from './error.handler'
 import { NotFoundHandler } from './not-found.handler'
 
@@ -30,5 +31,23 @@ describe('ErrorHandler', () => {
 		expect(body.status).toBe(500)
 		expect(body.path).toBe('/boom')
 		expect(body.timestamp).toBeDefined()
+	})
+
+	test('returns the custom response of an HTTPException unchanged', async () => {
+		const app = new Hono()
+		app.get('/auth', () => {
+			throw new HTTPException(401, {
+				res: new Response('Unauthorized', {
+					status: 401,
+					headers: { 'WWW-Authenticate': 'Basic realm="secure"' }
+				})
+			})
+		})
+		app.onError(ErrorHandler.handle())
+
+		const res = await app.request(new Request('http://localhost/auth'))
+		expect(res.status).toBe(401)
+		expect(res.headers.get('WWW-Authenticate')).toBe('Basic realm="secure"')
+		expect(await res.text()).toBe('Unauthorized')
 	})
 })

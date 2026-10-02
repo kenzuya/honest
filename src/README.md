@@ -72,7 +72,8 @@ const { app, hono } = await Application.create(AppModule)
 Core exports include lightweight testing helpers:
 
 - `createTestingModule(options)` - Create a dynamic module class for tests.
-- `createTestApplication(options)` - Start an app quickly and use `.request()` convenience helper.
+- `createTestApplication(options)` - Start an app quickly and use the `.request(input, init?)` convenience helper, which
+  accepts a path, URL or `Request`.
 - `createControllerTestApplication(options)` - Bootstrap an app around a single controller.
 - `createServiceTestContainer(options)` - Use DI-only service testing with overrides and preload.
 

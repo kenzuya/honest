@@ -9,7 +9,7 @@ import type { Context } from 'hono'
 export interface IGuard {
 	/**
 	 * Method to implement the guard logic.
-	 * Return true to allow the request to proceed, false to deny.
+	 * Return true to allow the request to proceed, false to deny (responds 403 Forbidden).
 	 *
 	 * @param context - The Hono context object
 	 * @returns A boolean or Promise<boolean> indicating if the request is allowed

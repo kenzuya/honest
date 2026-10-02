@@ -1,6 +1,5 @@
 import type { Context, Next } from 'hono'
 import { HONEST_PIPELINE_CONTROLLER_KEY, HONEST_PIPELINE_HANDLER_KEY } from '../constants'
-import { createErrorResponse } from '../helpers'
 import type {
 	ArgumentMetadata,
 	DiContainer,
@@ -173,10 +172,15 @@ export class ComponentManager {
 
 	// -- Filters --
 
+	/**
+	 * Runs exception filters (handler → controller → global) for an exception.
+	 * Returns the first filter response, or undefined when no filter handled it so the caller can
+	 * defer to the application's `onError` handler. Errors thrown by a filter propagate.
+	 */
 	async handleException(exception: unknown, context: Context): Promise<Response | undefined> {
 		const normalizedException = exception instanceof Error ? exception : new Error(String(exception))
 		const controller = context.get(HONEST_PIPELINE_CONTROLLER_KEY) as Constructor | undefined
-		const handlerName = context.get(HONEST_PIPELINE_HANDLER_KEY) as string | undefined
+		const handlerName = context.get(HONEST_PIPELINE_HANDLER_KEY) as string | symbol | undefined
 
 		if (controller && handlerName) {
 			const handlerFilters = this.metadataRepository.getHandlerComponents('filter', controller, handlerName)
@@ -204,8 +208,7 @@ export class ComponentManager {
 			if (response) return response
 		}
 
-		const { response, status } = createErrorResponse(normalizedException, context)
-		return context.json(response, status)
+		return undefined
 	}
 
 	private async executeFilters(
@@ -238,8 +241,7 @@ export class ComponentManager {
 					}
 				})
 
-				const { response, status } = createErrorResponse(filterError, context)
-				return context.json(response, status)
+				throw filterError instanceof Error ? filterError : new Error(String(filterError))
 			}
 		}
 		return undefined
@@ -264,12 +266,12 @@ export class ComponentManager {
 			throw new Error(`Module ${moduleClass.name} is not properly decorated with @Module()`)
 		}
 
-		const controllers: Constructor[] = []
+		const controllers = new Set<Constructor>()
 
 		if (moduleOptions.imports && moduleOptions.imports.length > 0) {
 			for (const importedModule of moduleOptions.imports) {
 				const importedControllers = await this.registerModule(importedModule, registered)
-				controllers.push(...importedControllers)
+				importedControllers.forEach((controller) => controllers.add(controller))
 			}
 		}
 
@@ -280,9 +282,10 @@ export class ComponentManager {
 		}
 
 		if (moduleOptions.controllers && moduleOptions.controllers.length > 0) {
-			controllers.push(...moduleOptions.controllers)
+			// A controller listed by several modules is registered once
+			moduleOptions.controllers.forEach((controller) => controllers.add(controller))
 		}
 
-		return controllers
+		return [...controllers]
 	}
 }

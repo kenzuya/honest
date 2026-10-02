@@ -28,9 +28,9 @@ The route manager responsible for route registration and handling:
 - **Route registration** - Registers controller routes with the Hono application
 - **Version management** - Handles API versioning and route versioning
 - **Path construction** - Builds complete route paths with prefixes and versions
-- **Middleware application** - Applies middleware to routes
+- **Middleware application** - Applies middleware to routes and sends middleware errors through exception filters
 - **Parameter processing** - Handles parameter binding and transformation
-- **Guard validation** - Executes guards before route handlers
+- **Guard validation** - Executes guards before route handlers; a rejection responds `403 Forbidden`
 
 ### `index.ts`
 
@@ -97,7 +97,7 @@ class AppModule {}
 // ComponentManager.registerModule handles:
 // 1. Recursive import registration
 // 2. Service instantiation
-// 3. Controller collection
+// 3. Controller collection (a controller listed by several modules is registered once)
 ```
 
 ### Exception Handling
@@ -109,7 +109,7 @@ Manages exception filters in a hierarchical manner:
 // 1. Handler-level filters
 // 2. Controller-level filters
 // 3. Global filters
-// 4. Default error response
+// 4. The application's onError handler (the built-in ErrorHandler unless overridden)
 
 class CustomExceptionFilter implements IFilter {
 	catch(exception: Error, context: Context): Response | undefined {
@@ -120,6 +120,12 @@ class CustomExceptionFilter implements IFilter {
 	}
 }
 ```
+
+The same order applies to exceptions from handlers, guards, pipes and middleware. Errors thrown by route middleware go
+through handler, controller and global filters; errors thrown by global middleware go through global filters only.
+
+`handleException()` returns the first filter response, or `undefined` when no filter handled the exception. The caller
+then rethrows it so `onError` produces the response. An error thrown inside a filter also goes to `onError`.
 
 ## Route Manager Features
 
@@ -236,7 +242,7 @@ class UsersController {
 	@Post()
 	createUser(@Body() user: UserDto) {
 		// If an exception occurs, CustomExceptionFilter is tried first,
-		// then ValidationExceptionFilter, then global filters
+		// then ValidationExceptionFilter, then global filters, then onError
 	}
 }
 ```

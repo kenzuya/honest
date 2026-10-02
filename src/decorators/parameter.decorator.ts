@@ -1,18 +1,26 @@
+import { HTTPException } from 'hono/http-exception'
 import { HONEST_PIPELINE_BODY_CACHE_KEY } from '../constants'
 import { createParamDecorator } from '../helpers'
+import { isObject } from '../utils'
 
 /**
- * Decorator that binds the request body to a parameter
- * @param data - Optional property name to extract from the body
+ * Decorator that binds the parsed JSON request body to a parameter
+ * Missing or malformed JSON responds 400
+ * @param data - Optional property name to extract from the body; undefined when the body is not an object
  */
 export const Body = createParamDecorator('body', async (data, ctx) => {
 	let body = ctx.get(HONEST_PIPELINE_BODY_CACHE_KEY) as unknown
 	if (body === undefined) {
-		body = await ctx.req.json()
+		try {
+			body = await ctx.req.json()
+		} catch (error) {
+			// Missing or malformed JSON is a client error, not a server failure
+			throw new HTTPException(400, { message: 'Invalid JSON request body', cause: error })
+		}
 		ctx.set(HONEST_PIPELINE_BODY_CACHE_KEY, body)
 	}
-	if (data && body && typeof body === 'object') {
-		return (body as Record<string, unknown>)[String(data)]
+	if (data) {
+		return isObject(body) ? body[String(data)] : undefined
 	}
 	return body
 })
@@ -55,6 +63,7 @@ export const Response = createParamDecorator('response', (_, ctx) => ctx.res)
 
 /**
  * Decorator that binds the context object to a parameter
+ * The handler's return value is still mapped to a response; a handler that sets c.res directly may return nothing
  */
 export const Ctx = createParamDecorator('context', (_, ctx) => ctx)
 export const Context = createParamDecorator('context', (_, ctx) => ctx)

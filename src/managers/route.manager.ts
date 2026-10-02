@@ -1,5 +1,5 @@
-import type { Context, Hono } from 'hono'
-import { VERSION_NEUTRAL } from '../constants'
+import type { Context, Hono, Next } from 'hono'
+import { HONEST_PIPELINE_CONTROLLER_KEY, HONEST_PIPELINE_HANDLER_KEY, VERSION_NEUTRAL } from '../constants'
 import { NoopLogger } from '../loggers'
 import type { DiContainer, ILogger, IMetadataRepository, ParameterMetadata, RouteDefinition } from '../interfaces'
 import { ComponentManager } from './component.manager'
@@ -9,6 +9,20 @@ import { PipelineExecutor } from './pipeline.executor'
 import { RouteRegistry } from '../registries/route.registry'
 import type { Constructor } from '../types'
 import { isNil, isString, normalizePath } from '../utils'
+
+type MiddlewareFn = (c: Context, next: Next) => Promise<Response | void>
+
+/**
+ * Runs exception filters for an error; when none handles it, rethrows (as an Error, which Hono
+ * requires) so the application's `onError` handler produces the response.
+ */
+async function handleWithFilters(componentManager: ComponentManager, error: unknown, c: Context): Promise<Response> {
+	const response = await componentManager.handleException(error, c)
+	if (response) {
+		return response
+	}
+	throw error instanceof Error ? error : new Error(String(error))
+}
 
 /**
  * Manager class for handling route registration in the Honest framework.
@@ -69,7 +83,29 @@ export class RouteManager {
 		const globalMiddleware = this.componentManager.getGlobalMiddleware()
 
 		for (const middleware of globalMiddleware) {
-			this.hono.use('*', middleware)
+			this.hono.use('*', this.wrapMiddleware(middleware))
+		}
+	}
+
+	/**
+	 * Routes middleware exceptions through exception filters. With a route scope, the controller and
+	 * handler are recorded first so controller- and handler-level filters apply.
+	 */
+	private wrapMiddleware(
+		middleware: MiddlewareFn,
+		scope?: { controllerClass: Constructor; handlerName: string | symbol }
+	): MiddlewareFn {
+		const componentManager = this.componentManager
+		return async (c: Context, next: Next) => {
+			if (scope) {
+				c.set(HONEST_PIPELINE_CONTROLLER_KEY, scope.controllerClass)
+				c.set(HONEST_PIPELINE_HANDLER_KEY, scope.handlerName)
+			}
+			try {
+				return await middleware(c, next)
+			} catch (error) {
+				return handleWithFilters(componentManager, error, c)
+			}
 		}
 	}
 
@@ -244,7 +280,9 @@ export class RouteManager {
 		const handlerParams = parameterMetadata.get(handlerName) || []
 		const contextIndex = contextIndices.get(handlerName)
 
-		const handlerMiddleware = this.componentManager.getHandlerMiddleware(controllerClass, handlerName)
+		const handlerMiddleware = this.componentManager
+			.getHandlerMiddleware(controllerClass, handlerName)
+			.map((middleware) => this.wrapMiddleware(middleware, { controllerClass, handlerName }))
 
 		const handlerPipes = this.componentManager.getHandlerPipes(controllerClass, handlerName)
 
@@ -275,7 +313,7 @@ export class RouteManager {
 					context: c
 				})
 			} catch (error) {
-				return componentManager.handleException(error, c)
+				return handleWithFilters(componentManager, error, c)
 			}
 		}
 

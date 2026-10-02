@@ -5,20 +5,14 @@ import { Get } from './http-method.decorator'
 import { Module } from './module.decorator'
 
 /**
- * Decorator that marks a class as a controller
- * Controllers are responsible for handling incoming requests and returning responses
+ * Decorator that marks a class as a view controller
+ * Views opt out of the global prefix and version unless the options set them explicitly
  * @param route - The base route for all endpoints in this controller
  * @param options - Configuration options for the controller
  * @returns A class decorator function
  */
-export function View(
-	route = '',
-	options: ControllerOptions = {
-		prefix: null,
-		version: null
-	}
-): ClassDecorator {
-	return Controller(route, options)
+export function View(route = '', options: ControllerOptions = {}): ClassDecorator {
+	return Controller(route, { prefix: null, version: null, ...options })
 }
 
 /**

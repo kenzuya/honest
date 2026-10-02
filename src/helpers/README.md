@@ -49,17 +49,22 @@ Creates standardized error response objects:
 
 ```typescript
 function createErrorResponse(
-	exception: Error,
+	exception: unknown,
 	context: Context,
 	options?: {
 		status?: number
 		title?: string
 		detail?: string
 		code?: string
-		additionalDetails?: Record<string, any>
+		additionalDetails?: Record<string, unknown>
 	}
 ): { response: ErrorResponse; status: ContentfulStatusCode }
 ```
+
+The status is resolved in this order: `options.status`; the status of an `HTTPException` or `FrameworkError`; a
+`statusCode` or `status` property on the error, used only if it is an integer from 400 to 599; otherwise 500. In
+production, unexpected errors and 5xx errors from a `status`/`statusCode` property get the message
+`Internal Server Error`.
 
 **Usage:**
 
@@ -114,10 +119,18 @@ function createParamDecorator<T = any>(type: string, factory?: (data: any, ctx: 
 **Usage:**
 
 ```typescript
-// This is how the framework creates parameter decorators
+// This is how the framework creates parameter decorators (simplified)
 export const Body = createParamDecorator('body', async (data, ctx) => {
-	const body = await ctx.req.json()
-	return data ? body[data] : body
+	let body: unknown
+	try {
+		body = await ctx.req.json()
+	} catch (error) {
+		throw new HTTPException(400, { message: 'Invalid JSON request body', cause: error })
+	}
+	if (data) {
+		return isObject(body) ? body[String(data)] : undefined
+	}
+	return body
 })
 
 export const Param = createParamDecorator('param', (data, ctx) => {

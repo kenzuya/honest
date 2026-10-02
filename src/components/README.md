@@ -82,7 +82,7 @@ Defines the configuration options for the Layout component:
 - `locale` - Page locale (defaults to 'en_US')
 - `type` - Open Graph type (defaults to 'website')
 - `siteName` - Site name for Open Graph
-- `customMeta` - Array of custom meta tags
+- `customMeta` - Array of custom meta tags (`{ name?, property, content, prefix? }`); empty fields are omitted
 - `scripts` - Array of script URLs or objects with loading options
 - `stylesheets` - Array of stylesheet URLs
 - `favicon` - Favicon URL
@@ -91,6 +91,9 @@ Defines the configuration options for the Layout component:
 - `htmlAttributes` - Custom HTML attributes
 - `headAttributes` - Custom head attributes
 - `bodyAttributes` - Custom body attributes
+
+Attribute and meta values are HTML-escaped. Attribute names containing whitespace, quotes, `<`, `>`, `/` or `=` are
+dropped, since a name cannot be escaped.
 
 ## Best Practices
 

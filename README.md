@@ -202,7 +202,9 @@ export default hono
 ```
 
 Controllers, services, and modules are wired by decorators; use **guards** for auth, **pipes** for validation, and
-**filters** for error handling. See the [documentation](https://honestjs.dev/docs/overview) for details.
+**filters** for error handling. Exceptions from handlers, guards, pipes and middleware go through filters (handler →
+controller → global); anything no filter handles goes to `onError`. See the
+[documentation](https://honestjs.dev/docs/overview) for details.
 
 ## Runtime Metadata Isolation
 

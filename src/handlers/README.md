@@ -14,7 +14,7 @@ error responses and proper request handling patterns.
 The main error handler that provides consistent error response formatting:
 
 - **Standardized error responses** - Consistent error format across the application
-- **HTTP exception handling** - Proper handling of Hono's HTTPException
+- **HTTP exception handling** - Uses an HTTPException's status and message, or returns its custom response unchanged
 - **Environment-aware responses** - Different error details for development vs production
 - **Request context integration** - Includes request path, timestamp, and request ID
 
@@ -68,6 +68,12 @@ class UsersController {
 }
 ```
 
+When an `HTTPException` carries a custom response (`res`), that response is returned as-is. This keeps headers such as
+`WWW-Authenticate` from Hono's `basicAuth` and `bearerAuth` middleware.
+
+Other errors may carry a `statusCode` or `status` property. It is used only when it is an integer from 400 to 599;
+anything else (a string, a 2xx/3xx code, an out-of-range number) produces a 500.
+
 ### Environment-Aware Responses
 
 Provides different error details based on the environment:
@@ -93,9 +99,17 @@ Provides different error details based on the environment:
 }
 ```
 
+In production, unexpected errors and 5xx errors that carry a `status`/`statusCode` property respond with
+`Internal Server Error`; 4xx messages, `HTTPException` and `FrameworkError` messages are kept. On runtimes without a
+`process` global (such as Cloudflare Workers without `nodejs_compat`), `NODE_ENV` is treated as unset: messages are
+shown and stack traces are omitted.
+
 ## Usage Examples
 
 ### Basic Error Handling
+
+`onError` receives every exception that no exception filter handled, whether it was thrown by a handler, guard, pipe,
+middleware or a filter itself. Without it, the built-in `ErrorHandler` formats the response.
 
 ```typescript
 import { Application } from '@honest/framework'
@@ -202,7 +216,7 @@ Error handlers are integrated throughout the framework:
 - **Controller-level filters** - Allow custom error handling per controller
 - **Method-level filters** - Provide granular error handling for specific endpoints
 - **Plugin system** - Plugins can extend error handling functionality
-- **Middleware integration** - Error handling works with all middleware
+- **Middleware integration** - Errors thrown by middleware go through exception filters, then `onError`
 
 ## Customization Options
 

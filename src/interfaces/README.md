@@ -46,6 +46,9 @@ interface HonestOptions {
 
 `plugins` runs each entry in array order; see `PluginEntry` under Plugin System.
 
+`onError` handles every exception that no exception filter handled, including errors thrown by middleware and by filters
+themselves. When it is omitted, the built-in `ErrorHandler` is used.
+
 #### `LogEvent` and `ILogger`
 
 Structured logging for framework diagnostics: startup, routing, plugins, the pipeline, DI, and errors flow through
@@ -166,6 +169,9 @@ interface IFilter {
 	catch(exception: Error, context: Context): Promise<Response | undefined> | Response | undefined
 }
 ```
+
+Return `undefined` to pass the exception to the next filter. When no filter is left, the application's `onError` handler
+produces the response. Non-`Error` values that were thrown arrive wrapped in an `Error`.
 
 ### Plugin System
 

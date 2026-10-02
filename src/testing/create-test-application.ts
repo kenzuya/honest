@@ -20,7 +20,7 @@ export async function createTestApplication(options: CreateTestApplicationOption
 			return Promise.resolve(hono.request(normalizedInput, init))
 		}
 
-		return Promise.resolve(hono.request(input))
+		return Promise.resolve(hono.request(input, init))
 	}
 
 	return { app, hono, request }

@@ -60,7 +60,7 @@ export interface TestApplication {
 
 	/**
 	 * Convenience request helper for tests.
-	 * Relative paths are resolved against http://localhost.
+	 * Relative paths are resolved against http://localhost. `init` applies to string and Request inputs.
 	 */
 	request: (input: string | Request, init?: RequestInit) => Promise<Response>
 }

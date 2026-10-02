@@ -1,3 +1,4 @@
+import { HTTPException } from 'hono/http-exception'
 import { createErrorResponse } from '../helpers'
 
 import type { Context } from 'hono'
@@ -13,6 +14,10 @@ export class ErrorHandler {
 	 */
 	static handle() {
 		return async (err: unknown, c: Context) => {
+			// Preserve custom responses (e.g. WWW-Authenticate from Hono's basicAuth/bearerAuth)
+			if (err instanceof HTTPException && err.res) {
+				return err.getResponse()
+			}
 			const { response, status } = createErrorResponse(err, c)
 			return c.json(response, status)
 		}
