@@ -34,20 +34,35 @@ const defaultSiteData: Partial<SiteData> = {
 	locale: 'en_US'
 }
 
+// Attribute names cannot be escaped, so names that could break out of the tag are dropped
+const isSafeAttributeName = (name: string): boolean => /^[^\s"'<>/=]+$/.test(name)
+
+const escapeAttributeValue = (value: string): string =>
+	value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
 const attrsToString = (attrs: HtmlAttributes | undefined): string => {
 	if (!attrs) {
 		return ''
 	}
 	return Object.entries(attrs)
+		.filter(([key]) => isSafeAttributeName(key))
 		.map(([key, value]) => {
 			if (typeof value === 'boolean') {
 				return value ? key : ''
 			}
-			const escapedValue = String(value).replace(/"/g, '&quot;')
-			return `${key}="${escapedValue}"`
+			return `${key}="${escapeAttributeValue(String(value))}"`
 		})
 		.filter(Boolean)
 		.join(' ')
+}
+
+const renderMetaTag = (meta: MetaTag) => {
+	const attrs: HtmlAttributes = {}
+	if (meta.name) attrs.name = meta.name
+	if (meta.property) attrs.property = meta.property
+	if (meta.prefix) attrs.prefix = meta.prefix
+	attrs.content = meta.content
+	return html`<meta ${raw(attrsToString(attrs))} />`
 }
 
 export const Layout = (props: PropsWithChildren<SiteData>) => {
@@ -83,13 +98,7 @@ export const Layout = (props: PropsWithChildren<SiteData>) => {
 				${data.image ? html`<meta name="twitter:image" content="${data.image}" />` : ''}
 
 				<!-- Custom Meta Tags -->
-				${data.customMeta
-					? data.customMeta.map((meta) => {
-							const nameAttr = meta.name ? `name="${meta.name}"` : ''
-							const propertyAttr = meta.property ? `property="${meta.property}"` : ''
-							return html`<meta ${nameAttr} ${propertyAttr} content="${meta.content}" />`
-						})
-					: ''}
+				${data.customMeta ? data.customMeta.map(renderMetaTag) : ''}
 
 				<!-- Favicon -->
 				${data.favicon ? html`<link rel="icon" href="${data.favicon}" />` : ''}
