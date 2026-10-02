@@ -199,11 +199,8 @@ export class Application {
 						startupDurationMs: Date.now() - startupStartedAt
 					}
 				})
-				const strictError = new Error(
-					'Strict mode: no routes were registered. Check your module/controller decorators.'
-				)
-				app.emitStartupGuide(strictError, rootModule)
-				throw strictError
+				// The startup guide for this error is emitted by the catch block below
+				throw new Error('Strict mode: no routes were registered. Check your module/controller decorators.')
 			}
 			if (debugRoutes) {
 				app.logger.emit({

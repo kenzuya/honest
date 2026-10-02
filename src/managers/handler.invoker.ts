@@ -9,12 +9,13 @@ export class HandlerInvoker {
 	async invoke({ handler, args, context, contextIndex }: HandlerInvocationInput): Promise<unknown> {
 		const result = await handler(...args)
 
-		if (contextIndex !== undefined) {
+		if (result instanceof Response) {
 			return result
 		}
 
-		if (result instanceof Response) {
-			return result
+		// A @Ctx() handler may have written the response directly (c.res = ...) and returned nothing
+		if (contextIndex !== undefined && isNil(result) && context.finalized) {
+			return context.res
 		}
 
 		if (isNil(result)) {

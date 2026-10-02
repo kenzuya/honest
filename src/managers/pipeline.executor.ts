@@ -35,7 +35,7 @@ export class PipelineExecutor {
 		const { controllerClass, handlerName, handler, handlerParams, handlerPipes, contextIndex, context } = input
 
 		context.set(HONEST_PIPELINE_CONTROLLER_KEY, controllerClass)
-		context.set(HONEST_PIPELINE_HANDLER_KEY, String(handlerName))
+		context.set(HONEST_PIPELINE_HANDLER_KEY, handlerName)
 
 		const guards = this.componentManager.getHandlerGuards(controllerClass, handlerName)
 
@@ -50,9 +50,8 @@ export class PipelineExecutor {
 						details: { guard: guard.constructor?.name || 'UnknownGuard' }
 					})
 				}
-				throw new HTTPException(403, {
-					message: `Forbidden by ${guard.constructor?.name || 'UnknownGuard'} at ${controllerClass.name}.${String(handlerName)}`
-				})
+				// Guard and handler names stay in the debug log; they are not exposed to clients
+				throw new HTTPException(403, { message: 'Forbidden' })
 			}
 		}
 

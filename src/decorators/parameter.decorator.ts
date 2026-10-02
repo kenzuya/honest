@@ -1,5 +1,7 @@
+import { HTTPException } from 'hono/http-exception'
 import { HONEST_PIPELINE_BODY_CACHE_KEY } from '../constants'
 import { createParamDecorator } from '../helpers'
+import { isObject } from '../utils'
 
 /**
  * Decorator that binds the request body to a parameter
@@ -8,11 +10,16 @@ import { createParamDecorator } from '../helpers'
 export const Body = createParamDecorator('body', async (data, ctx) => {
 	let body = ctx.get(HONEST_PIPELINE_BODY_CACHE_KEY) as unknown
 	if (body === undefined) {
-		body = await ctx.req.json()
+		try {
+			body = await ctx.req.json()
+		} catch (error) {
+			// Missing or malformed JSON is a client error, not a server failure
+			throw new HTTPException(400, { message: 'Invalid JSON request body', cause: error })
+		}
 		ctx.set(HONEST_PIPELINE_BODY_CACHE_KEY, body)
 	}
-	if (data && body && typeof body === 'object') {
-		return (body as Record<string, unknown>)[String(data)]
+	if (data) {
+		return isObject(body) ? body[String(data)] : undefined
 	}
 	return body
 })

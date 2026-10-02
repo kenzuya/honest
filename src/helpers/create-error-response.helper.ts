@@ -5,6 +5,18 @@ import { FrameworkError } from '../errors'
 import type { ErrorResponse } from '../interfaces'
 
 /**
+ * Reads NODE_ENV without assuming a Node-style `process` global (absent on e.g. Cloudflare Workers).
+ */
+const getNodeEnv = (): string | undefined => (typeof process !== 'undefined' ? process.env?.NODE_ENV : undefined)
+
+/**
+ * Only integer 4xx/5xx codes are accepted from arbitrary error objects, so foreign `status` fields
+ * (strings, 2xx/3xx, out-of-range values) can't produce a success response or crash `c.json()`.
+ */
+const isHttpErrorStatus = (value: unknown): value is number =>
+	typeof value === 'number' && Number.isInteger(value) && value >= 400 && value <= 599
+
+/**
  * Creates a standardized error response object
  * @param exception - The error or exception object to process
  * @param context - The Hono context object containing request information
@@ -70,18 +82,17 @@ export function createErrorResponse(
 	}
 
 	// Combined status handling
-	if (
-		(normalizedException as Error & { statusCode?: number; status?: number }).statusCode ||
-		(normalizedException as Error & { status?: number }).status
-	) {
-		const defaultStatus =
-			(normalizedException as Error & { statusCode?: number; status?: number }).statusCode ||
-			(normalizedException as Error & { status?: number }).status ||
-			500
-		const status = options?.status || defaultStatus
+	const errorWithStatus = normalizedException as Error & { statusCode?: unknown; status?: unknown }
+	const errorStatus = [errorWithStatus.statusCode, errorWithStatus.status].find(isHttpErrorStatus)
+	if (errorStatus !== undefined) {
+		const status = options?.status || errorStatus
 		const response: ErrorResponse = {
 			status,
-			message: options?.title || normalizedException.message,
+			message:
+				options?.title ||
+				(status >= 500 && getNodeEnv() === 'production'
+					? 'Internal Server Error'
+					: normalizedException.message),
 			timestamp,
 			path,
 			requestId,
@@ -101,15 +112,14 @@ export function createErrorResponse(
 	const response: ErrorResponse = {
 		status,
 		message:
-			options?.title ||
-			(process.env.NODE_ENV === 'production' ? 'Internal Server Error' : normalizedException.message),
+			options?.title || (getNodeEnv() === 'production' ? 'Internal Server Error' : normalizedException.message),
 		timestamp,
 		path,
 		requestId,
 		code: options?.code || normalizedException.name,
 		details:
 			options?.additionalDetails ||
-			(process.env.NODE_ENV === 'development' ? { stack: normalizedException.stack } : undefined),
+			(getNodeEnv() === 'development' ? { stack: normalizedException.stack } : undefined),
 		...(options?.detail && { detail: options.detail })
 	}
 

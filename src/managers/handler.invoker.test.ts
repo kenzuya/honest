@@ -58,7 +58,7 @@ describe('HandlerInvoker', () => {
 		expect(await (result as Response).text()).toBe('null')
 	})
 
-	test('returns raw result when context parameter exists', async () => {
+	test('maps plain result to JSON response when context parameter exists', async () => {
 		const invoker = new HandlerInvoker()
 
 		const result = await invoker.invoke({
@@ -68,7 +68,23 @@ describe('HandlerInvoker', () => {
 			contextIndex: 0
 		})
 
-		expect(result).toEqual({ ok: true })
+		expect(result).toBeInstanceOf(Response)
+		expect(await (result as Response).json()).toEqual({ ok: true })
+	})
+
+	test('returns context.res when a context-parameter handler finalized the response', async () => {
+		const invoker = new HandlerInvoker()
+		const written = new Response('written directly')
+		const context = Object.assign(createContextStub(), { finalized: true, res: written })
+
+		const result = await invoker.invoke({
+			handler: () => undefined,
+			args: [],
+			context,
+			contextIndex: 0
+		})
+
+		expect(result).toBe(written)
 	})
 
 	test('throws FrameworkError for BigInt response payload', async () => {

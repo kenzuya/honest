@@ -49,6 +49,57 @@ describe('createErrorResponse', () => {
 		expect(response.message).toBe('Not Found')
 	})
 
+	test.each(['failed', 204, 302, 1000, 404.5])(
+		'non-error status property %p is ignored and falls back to 500',
+		async (invalidStatus) => {
+			const helper = makeContext()
+			const err = Object.assign(new Error('upstream failed'), { status: invalidStatus })
+			const { response, status } = await helper.run(err)
+			expect(status).toBe(500)
+			expect(response.status).toBe(500)
+		}
+	)
+
+	test('invalid statusCode falls back to a valid status property', async () => {
+		const helper = makeContext()
+		const err = Object.assign(new Error('Conflict'), { statusCode: 'E_CONFLICT', status: 409 })
+		const { status } = await helper.run(err)
+		expect(status).toBe(409)
+	})
+
+	test('production masks 5xx status-property messages but keeps 4xx messages', async () => {
+		const originalNodeEnv = process.env.NODE_ENV
+		process.env.NODE_ENV = 'production'
+		try {
+			const helper = makeContext()
+			const serverError = await helper.run(Object.assign(new Error('db credentials rejected'), { status: 503 }))
+			expect(serverError.status).toBe(503)
+			expect(serverError.response.message).toBe('Internal Server Error')
+
+			const clientError = await helper.run(Object.assign(new Error('User not found'), { status: 404 }))
+			expect(clientError.response.message).toBe('User not found')
+		} finally {
+			if (originalNodeEnv === undefined) {
+				delete process.env.NODE_ENV
+			} else {
+				process.env.NODE_ENV = originalNodeEnv
+			}
+		}
+	})
+
+	test('works on runtimes without a process global', async () => {
+		const processDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'process')!
+		const helper = makeContext()
+		Object.defineProperty(globalThis, 'process', { value: undefined, configurable: true, writable: true })
+		try {
+			const { response, status } = await helper.run(new Error('edge failure'))
+			expect(status).toBe(500)
+			expect(response.message).toBe('edge failure')
+		} finally {
+			Object.defineProperty(globalThis, 'process', processDescriptor)
+		}
+	})
+
 	test('generic Error → 500', async () => {
 		const helper = makeContext()
 		const { response, status } = await helper.run(new Error('something broke'))

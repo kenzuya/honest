@@ -160,8 +160,9 @@ describe('Application diagnostics', () => {
 			})
 		).rejects.toThrow('Strict mode: no routes were registered')
 
-		const guideEvent = events.find((event) => event.category === 'startup' && event.message === 'Startup guide')
-		expect(guideEvent).toBeDefined()
+		const guideEvents = events.filter((event) => event.category === 'startup' && event.message === 'Startup guide')
+		expect(guideEvents).toHaveLength(1)
+		const guideEvent = guideEvents[0]
 		expect(Array.isArray((guideEvent?.details as Record<string, unknown>)?.hints)).toBe(true)
 		expect(
 			((guideEvent?.details as Record<string, unknown>)?.hints as string[]).some((hint) =>
