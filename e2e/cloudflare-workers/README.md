@@ -1,7 +1,7 @@
 # Cloudflare Workers end-to-end test
 
-Runs the built `honestjs` package inside **workerd** (the Cloudflare Workers runtime) and checks its behaviour over
-HTTP.
+Runs the built `@kenzuya/honest` package inside **workerd** (the Cloudflare Workers runtime) and checks its behaviour
+over HTTP.
 
 ```bash
 bun run test:workers   # from the repository root: builds dist, installs deps here, runs the suite

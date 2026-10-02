@@ -1,11 +1,11 @@
 {
 	"name": "honestjs-e2e",
 	// Recommended setup: compile with tsc first (emits decorator metadata), then let wrangler bundle the JS.
-	// Wrangler's built-in esbuild step does not support emitDecoratorMetadata, which honestjs DI relies on.
+	// Wrangler's built-in esbuild step does not support emitDecoratorMetadata, which @kenzuya/honest DI relies on.
 	"main": "dist/tsc/worker.js",
 	"compatibility_date": "2026-08-01",
 	"build": { "command": "npx tsc -p tsconfig.json", "watch_dir": "src" },
 	// Use the locally built package; hono and reflect-metadata resolve from the repo root node_modules
-	"alias": { "honestjs": "../../dist/index.js" },
+	"alias": { "@kenzuya/honest": "../../dist/index.js" },
 	"vars": { "GREETING": "hello from env", "API_TOKEN": "secret" }
 }
