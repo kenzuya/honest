@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 import { afterEach, describe, expect, test } from 'bun:test'
-import { Controller, Get } from '../decorators'
+import { Body, Controller, Get, Post } from '../decorators'
 import { createControllerTestApplication } from './create-controller-test-application'
 import { createTestApplication } from './create-test-application'
 import { createServiceTestContainer } from './create-service-test-container'
@@ -75,6 +75,26 @@ describe('testing harness', () => {
 		const response = await testApp.request(new Request('http://localhost/missing'))
 
 		expect(response.status).toBe(404)
+	})
+
+	test('createTestApplication request helper applies init to Request input', async () => {
+		@Controller('/echo')
+		class EchoController {
+			@Post()
+			echo(@Body() body: unknown) {
+				return { body }
+			}
+		}
+
+		const testApp = await createTestApplication({ controllers: [EchoController] })
+		const response = await testApp.request(new Request('http://localhost/echo'), {
+			method: 'POST',
+			body: JSON.stringify({ hello: 'world' }),
+			headers: { 'content-type': 'application/json' }
+		})
+
+		expect(response.status).toBe(200)
+		expect(await response.json()).toEqual({ body: { hello: 'world' } })
 	})
 
 	test('createControllerTestApplication mounts a single controller', async () => {
