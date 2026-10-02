@@ -118,7 +118,9 @@ export interface HonestOptions {
 	plugins?: PluginEntry[]
 
 	/**
-	 * Default exception handler to use when no filter matches
+	 * Default exception handler to use when no filter matches.
+	 * Receives exceptions from handlers, guards, pipes and middleware that no exception filter handled,
+	 * as well as errors thrown by filters. Defaults to the built-in ErrorHandler.
 	 */
 	onError?: (error: unknown, context: Context) => Response | Promise<Response>
 

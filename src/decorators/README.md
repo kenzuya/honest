@@ -86,13 +86,15 @@ class AppModule {}
 
 Extract and bind request data to method parameters:
 
-- **`@Body(data?)`** - Request body or specific property
+- **`@Body(data?)`** - Parsed JSON request body, or one of its properties. Missing or malformed JSON responds `400`;
+  `@Body('key')` is `undefined` when the body is not an object
 - **`@Param(data?)`** - Route parameters
 - **`@Query(data?)`** - Query string parameters
 - **`@Header(data?)`** - HTTP headers
 - **`@Req()`** - Full request object
 - **`@Res()`** - Response object
-- **`@Ctx()`** - Hono context object
+- **`@Ctx()`** - Hono context object. The return value is still mapped to a response like any handler's (a plain value
+  becomes JSON or text); a handler that sets `c.res` directly may return nothing
 - **`@Var(data)`** - Context variables
 
 ```typescript
@@ -123,6 +125,8 @@ class UsersController {
 }
 ```
 
+Errors thrown by middleware go through the route's exception filters, then `onError`.
+
 #### `@UseGuards(...guards)`
 
 Applies guards for authorization and access control.
@@ -136,6 +140,9 @@ class AdminController {
 	getUsers() {}
 }
 ```
+
+If a guard returns `false`, the request is rejected with `403` and the message `Forbidden`. Which guard rejected it is
+reported in the `debug.pipeline` log, not in the response.
 
 #### `@UsePipes(...pipes)`
 
@@ -153,7 +160,9 @@ class UsersController {
 
 #### `@UseFilters(...filters)`
 
-Applies exception filters for error handling.
+Applies exception filters for error handling. Filters run handler-level first, then controller-level, then global; the
+first one to return a `Response` wins. They also see errors thrown by middleware on the same route. Exceptions that no
+filter handles go to the application's `onError` handler.
 
 ```typescript
 @UseFilters(HttpExceptionFilter, ValidationExceptionFilter)
@@ -171,7 +180,8 @@ Alternative decorators for MVC-style applications:
 
 #### `@View(route?, options?)`
 
-Alias for `@Controller` with MVC naming.
+Like `@Controller`, but opts out of the global prefix and version (`prefix: null, version: null`). Options you pass are
+merged over those defaults, so `@View('page', { prefix: 'ui' })` serves `/ui/page` even when a global version is set.
 
 #### `@Page(path?, options?)`
 

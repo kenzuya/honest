@@ -4,8 +4,9 @@ import { createParamDecorator } from '../helpers'
 import { isObject } from '../utils'
 
 /**
- * Decorator that binds the request body to a parameter
- * @param data - Optional property name to extract from the body
+ * Decorator that binds the parsed JSON request body to a parameter
+ * Missing or malformed JSON responds 400
+ * @param data - Optional property name to extract from the body; undefined when the body is not an object
  */
 export const Body = createParamDecorator('body', async (data, ctx) => {
 	let body = ctx.get(HONEST_PIPELINE_BODY_CACHE_KEY) as unknown
@@ -62,6 +63,7 @@ export const Response = createParamDecorator('response', (_, ctx) => ctx.res)
 
 /**
  * Decorator that binds the context object to a parameter
+ * The handler's return value is still mapped to a response; a handler that sets c.res directly may return nothing
  */
 export const Ctx = createParamDecorator('context', (_, ctx) => ctx)
 export const Context = createParamDecorator('context', (_, ctx) => ctx)

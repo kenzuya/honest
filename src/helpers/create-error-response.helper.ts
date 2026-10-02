@@ -18,6 +18,7 @@ const isHttpErrorStatus = (value: unknown): value is number =>
 
 /**
  * Creates a standardized error response object
+ * A `statusCode`/`status` property on the exception is used only if it is an integer from 400 to 599; otherwise 500.
  * @param exception - The error or exception object to process
  * @param context - The Hono context object containing request information
  * @param options - Optional configuration for the error response
