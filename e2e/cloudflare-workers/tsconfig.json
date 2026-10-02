@@ -13,7 +13,7 @@
 		"jsxImportSource": "hono/jsx",
 		"outDir": "dist/tsc",
 		"paths": {
-			"honestjs": ["../../dist/index.d.ts"]
+			"@kenzuya/honest": ["../../dist/index.d.ts"]
 		}
 	},
 	"include": ["src"]

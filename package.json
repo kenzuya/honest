@@ -1,11 +1,11 @@
 {
-	"name": "honestjs",
+	"name": "@kenzuya/honest",
 	"description": "HonestJS - a modern web framework built on top of Hono",
 	"version": "0.1.22",
 	"author": "Orkhan Karimov <karimovok1@gmail.com> (https://github.com/kerimovok)",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/honestjs/honest.git"
+		"url": "git+https://github.com/kenzuya/honest.git"
 	},
 	"main": "dist/index.js",
 	"module": "dist/index.js",
@@ -30,7 +30,10 @@
 	"files": [
 		"dist"
 	],
-	"homepage": "https://github.com/honestjs/honest",
+	"homepage": "https://github.com/kenzuya/honest#readme",
+	"bugs": {
+		"url": "https://github.com/kenzuya/honest/issues"
+	},
 	"keywords": [
 		"nodejs",
 		"bun",
@@ -46,7 +49,8 @@
 	],
 	"license": "MIT",
 	"publishConfig": {
-		"registry": "https://registry.npmjs.org"
+		"registry": "https://registry.npmjs.org",
+		"access": "public"
 	},
 	"scripts": {
 		"clean": "rm -rf dist",

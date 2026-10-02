@@ -28,7 +28,7 @@ import {
 	type IGuard,
 	type IMiddleware,
 	type IPipe
-} from 'honestjs'
+} from '@kenzuya/honest'
 
 export type Env = { GREETING: string; API_TOKEN: string }
 

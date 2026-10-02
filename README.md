@@ -52,13 +52,13 @@ ultra-fast performance of Hono, giving you the best of both worlds.
 
 <div align="center">
 
-[![GitHub](https://img.shields.io/github/license/honestjs/honest)](https://github.com/honestjs/honest/blob/main/LICENSE)
-[![npm](https://img.shields.io/npm/v/honestjs)](https://www.npmjs.com/package/honestjs)
-[![npm](https://img.shields.io/npm/dm/honestjs)](https://www.npmjs.com/package/honestjs)
-[![Bundle Size](https://img.shields.io/bundlephobia/min/honestjs)](https://bundlephobia.com/result?p=honestjs)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/honestjs)](https://bundlephobia.com/result?p=honestjs)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/honestjs/honest)](https://github.com/honestjs/honest/pulse)
-[![GitHub last commit](https://img.shields.io/github/last-commit/honestjs/honest)](https://github.com/honestjs/honest/commits/main)
+[![GitHub](https://img.shields.io/github/license/kenzuya/honest)](https://github.com/kenzuya/honest/blob/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/@kenzuya/honest)](https://www.npmjs.com/package/@kenzuya/honest)
+[![npm](https://img.shields.io/npm/dm/@kenzuya/honest)](https://www.npmjs.com/package/@kenzuya/honest)
+[![Bundle Size](https://img.shields.io/bundlephobia/min/@kenzuya/honest)](https://bundlephobia.com/result?p=@kenzuya/honest)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@kenzuya/honest)](https://bundlephobia.com/result?p=@kenzuya/honest)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/kenzuya/honest)](https://github.com/kenzuya/honest/pulse)
+[![GitHub last commit](https://img.shields.io/github/last-commit/kenzuya/honest)](https://github.com/kenzuya/honest/commits/master)
 [![Discord badge](https://img.shields.io/discord/1482150663432442026?label=Discord&logo=Discord)](https://discord.gg/wZvB7jXhdX)
 
 </div>
@@ -125,7 +125,7 @@ full tutorial, and **[FAQ](https://honestjs.dev/docs/faq)** /
 
 ```typescript
 import 'reflect-metadata'
-import { Application, Controller, Get, Module, Service } from 'honestjs'
+import { Application, Controller, Get, Module, Service } from '@kenzuya/honest'
 import { LoggerMiddleware } from '@honestjs/middleware'
 import { AuthGuard } from '@honestjs/guards'
 import { ValidationPipe } from '@honestjs/pipes'
@@ -222,7 +222,7 @@ example API docs) when one plugin depends on another’s app-context output.
 Honest exports lightweight helpers for common test setups.
 
 ```typescript
-import { createControllerTestApplication, createServiceTestContainer, createTestApplication } from 'honestjs'
+import { createControllerTestApplication, createServiceTestContainer, createTestApplication } from '@kenzuya/honest'
 
 const app = await createTestApplication({
 	controllers: [UsersController],
