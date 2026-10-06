@@ -51,9 +51,9 @@ class UsersController {
 
 ### Dependency Injection Decorators
 
-#### `@Service()`
+#### `@Service(options?)`
 
-Marks a class as a service that can be injected as a dependency.
+Marks a class as a service that can be injected as a dependency. By default a service is a singleton.
 
 ```typescript
 @Service()
@@ -66,6 +66,19 @@ class UserService {
 @Controller('users')
 class UsersController {
 	constructor(private userService: UserService) {}
+}
+```
+
+Options:
+
+- `scope` - `Scope.DEFAULT` (singleton, the default), `Scope.REQUEST` (one instance per request) or `Scope.TRANSIENT` (a
+  new instance for every injection). Classes that depend on a request-scoped service become request-scoped too. See the
+  [DI scopes guide](../di/README.md#scopes).
+
+```typescript
+@Service({ scope: Scope.REQUEST })
+class RequestLogger {
+	constructor(private readonly request: RequestContext) {}
 }
 ```
 

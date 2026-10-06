@@ -15,13 +15,17 @@ services. It handles the creation, lifecycle management, and dependency resoluti
 The main dependency injection container that:
 
 - **Resolves dependencies** - Automatically creates instances with their dependencies
-- **Manages singletons** - Ensures each service has only one instance
+- **Manages scopes** - Singleton, per-request and transient instances (see [Scopes](#scopes))
 - **Handles circular dependencies** - Detects and prevents circular dependency issues
 - **Supports custom instances** - Allows registration of pre-created instances
 
+### `request-context.ts`
+
+The injectable `RequestContext` class that exposes the current request to request-scoped services.
+
 ### `index.ts`
 
-Export file that provides access to the DI container.
+Export file that provides access to the DI container and `RequestContext`.
 
 ## Core Features
 
@@ -48,32 +52,48 @@ class UsersController {
 }
 ```
 
-### Singleton Management
+### Scopes
 
-Each service is instantiated only once and reused across the application:
+`@Service()` takes an optional `scope` that controls how long an instance lives:
+
+| Scope             | Instance lifetime                                                        |
+| ----------------- | ------------------------------------------------------------------------ |
+| `Scope.DEFAULT`   | One instance per container, shared by every consumer. Used when omitted. |
+| `Scope.REQUEST`   | One instance per HTTP request, shared by everything resolved in it.      |
+| `Scope.TRANSIENT` | A new instance for every injection and every `resolve()` call.           |
 
 ```typescript
-@Service()
-class LoggerService {
-	private count = 0
+import { RequestContext, Scope, Service } from '@kenzuya/honest'
 
-	log(message: string) {
-		this.count++
-		console.log(`[${this.count}] ${message}`)
+@Service({ scope: Scope.REQUEST })
+class CurrentUser {
+	constructor(private readonly request: RequestContext) {}
+
+	get id() {
+		return this.request.context.req.header('x-user-id')
 	}
 }
 
-// Both controllers get the same LoggerService instance
-@Controller('users')
-class UsersController {
-	constructor(private logger: LoggerService) {}
-}
-
-@Controller('posts')
-class PostsController {
-	constructor(private logger: LoggerService) {}
+@Controller('profile')
+class ProfileController {
+	// Resolved per request, because CurrentUser is request-scoped
+	constructor(private readonly currentUser: CurrentUser) {}
 }
 ```
+
+Rules worth knowing:
+
+- **Request scope bubbles up.** A service or controller that depends on a `Scope.REQUEST` service, directly or through
+  other services, is also created per request. Controllers without request-scoped dependencies are still created once at
+  startup.
+- **`RequestContext`** gives a request-scoped service the current Hono `Context` through `.context`. Injecting it makes
+  the class request-scoped.
+- **Within one request**, the controller, guards, filters and middleware receive the same request-scoped instance.
+- **Outside a request**, resolving a request-scoped class throws `Cannot resolve X outside a request`. Pass the context
+  explicitly with `container.resolve(X, context)` when needed, for example in tests.
+- **Pipes cannot be request-scoped**, because they are created once at startup. Application startup fails with a message
+  naming the pipe.
+- A transient instance injected into a singleton lives as long as that singleton.
 
 ### Circular Dependency Detection
 
@@ -161,13 +181,19 @@ container.register(DatabaseService, dbService)
 
 ## Container API
 
-### `resolve<T>(target: Constructor<T>): T`
+### `resolve<T>(target: Constructor<T>, context?: Context): T`
 
-Resolves a service instance, creating it if necessary:
+Resolves a service instance, creating it if necessary. Request-scoped classes need the request `context`:
 
 ```typescript
 const userService = container.resolve(UserService)
+const currentUser = container.resolve(CurrentUser, c)
 ```
+
+### `isRequestScoped<T>(target: Constructor<T>): boolean`
+
+Returns `true` when the class is created per request, either because it is declared with `Scope.REQUEST` or because one
+of its dependencies is.
 
 ### `register<T>(target: Constructor<T>, instance: T): void`
 
@@ -205,6 +231,7 @@ The container provides clear error messages for common issues:
 ## Performance Considerations
 
 - **Lazy instantiation** - Services are only created when first requested
-- **Singleton caching** - Instances are cached and reused
+- **Singleton caching** - `Scope.DEFAULT` instances are cached and reused
+- **Request caching** - Request-scoped instances are kept per request and released with the request context
 - **Minimal reflection** - Uses efficient reflection metadata access
 - **Memory efficient** - Automatic cleanup of unused references

@@ -155,7 +155,10 @@ export class RouteManager {
 
 		const controllerSegment = this.normalizePath(controllerPath)
 
-		const controllerInstance = this.container.resolve(controllerClass)
+		// Request-scoped controllers are built per request in the route handler
+		const controllerInstance = this.container.isRequestScoped?.(controllerClass)
+			? undefined
+			: this.container.resolve(controllerClass)
 
 		const effectiveControllerPrefix =
 			controllerOptions.prefix !== undefined ? controllerOptions.prefix : this.globalPrefix
@@ -275,7 +278,13 @@ export class RouteManager {
 
 		const fullPath = this.buildRoutePath(prefixSegment, versionSegment, controllerSegment, methodSegment)
 
-		const handler = controllerInstance[handlerName].bind(controllerInstance)
+		if (typeof controllerClass.prototype[handlerName] !== 'function') {
+			throw new Error(`Handler ${controllerClass.name}.${String(handlerName)} is not a method`)
+		}
+
+		const singletonHandler = controllerInstance
+			? controllerInstance[handlerName].bind(controllerInstance)
+			: undefined
 
 		const handlerParams = parameterMetadata.get(handlerName) || []
 		const contextIndex = contextIndices.get(handlerName)
@@ -300,9 +309,15 @@ export class RouteManager {
 
 		const componentManager = this.componentManager
 		const pipelineExecutor = this.pipelineExecutor
+		const container = this.container
 
 		const wrapperHandler = async (c: Context) => {
 			try {
+				let handler = singletonHandler
+				if (!handler) {
+					const instance = container.resolve(controllerClass, c)
+					handler = instance[handlerName].bind(instance)
+				}
 				return await pipelineExecutor.execute({
 					controllerClass,
 					handlerName,
