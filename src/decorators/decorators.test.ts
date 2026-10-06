@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import { afterEach, describe, expect, test } from 'bun:test'
+import { Scope } from '../constants'
 import { MetadataRegistry } from '../registries'
 import { Controller } from './controller.decorator'
 import { Module } from './module.decorator'
@@ -59,6 +60,21 @@ describe('@Service', () => {
 		@Service()
 		class MyService {}
 		expect(MetadataRegistry.isService(MyService)).toBe(true)
+	})
+
+	test('stores Scope.DEFAULT when no scope is given', () => {
+		@Service()
+		class PlainService {}
+		expect(MetadataRegistry.getServiceScope(PlainService)).toBe(Scope.DEFAULT)
+	})
+
+	test('stores the scope passed in options', () => {
+		@Service({ scope: Scope.REQUEST })
+		class RequestService {}
+		@Service({ scope: Scope.TRANSIENT })
+		class TransientService {}
+		expect(MetadataRegistry.getServiceScope(RequestService)).toBe(Scope.REQUEST)
+		expect(MetadataRegistry.getServiceScope(TransientService)).toBe(Scope.TRANSIENT)
 	})
 })
 

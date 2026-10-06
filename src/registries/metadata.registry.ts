@@ -1,3 +1,4 @@
+import { Scope } from '../constants'
 import type {
 	ControllerOptions,
 	FilterType,
@@ -53,6 +54,11 @@ export class MetadataRegistry {
 	 * Used for dependency injection and lifecycle management
 	 */
 	private static readonly services = new Set<Constructor>()
+
+	/**
+	 * Declared scope of each service class
+	 */
+	private static readonly serviceScopes = new Map<Constructor, Scope>()
 
 	/**
 	 * Stores configuration options for modules
@@ -169,8 +175,16 @@ export class MetadataRegistry {
 	/**
 	 * Add a service
 	 */
-	static addService(service: Constructor): void {
+	static addService(service: Constructor, scope: Scope = Scope.DEFAULT): void {
 		this.services.add(service)
+		this.serviceScopes.set(service, scope)
+	}
+
+	/**
+	 * Get the declared scope of a service, Scope.DEFAULT when the class is not a service
+	 */
+	static getServiceScope(service: Constructor): Scope {
+		return this.serviceScopes.get(service) ?? Scope.DEFAULT
 	}
 
 	/**
@@ -304,6 +318,7 @@ export class MetadataRegistry {
 		this.controllers.clear()
 		this.controllerOptions.clear()
 		this.services.clear()
+		this.serviceScopes.clear()
 		this.modules.clear()
 		this.parameters.clear()
 		this.contextIndices.clear()

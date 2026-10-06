@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import { afterEach, describe, expect, test } from 'bun:test'
+import { Scope } from '../constants'
 import { MetadataRegistry } from './metadata.registry'
 
 class FakeController {}
@@ -69,6 +70,14 @@ describe('MetadataRegistry', () => {
 			expect(MetadataRegistry.isService(FakeService)).toBe(false)
 			MetadataRegistry.addService(FakeService)
 			expect(MetadataRegistry.isService(FakeService)).toBe(true)
+		})
+
+		test('addService stores the scope, defaulting to Scope.DEFAULT', () => {
+			expect(MetadataRegistry.getServiceScope(FakeService)).toBe(Scope.DEFAULT)
+			MetadataRegistry.addService(FakeService, Scope.REQUEST)
+			expect(MetadataRegistry.getServiceScope(FakeService)).toBe(Scope.REQUEST)
+			MetadataRegistry.clear()
+			expect(MetadataRegistry.getServiceScope(FakeService)).toBe(Scope.DEFAULT)
 		})
 
 		test('getAllServices returns the set', () => {

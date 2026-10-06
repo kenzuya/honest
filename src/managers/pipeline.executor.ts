@@ -37,7 +37,7 @@ export class PipelineExecutor {
 		context.set(HONEST_PIPELINE_CONTROLLER_KEY, controllerClass)
 		context.set(HONEST_PIPELINE_HANDLER_KEY, handlerName)
 
-		const guards = this.componentManager.getHandlerGuards(controllerClass, handlerName)
+		const guards = this.componentManager.getHandlerGuards(controllerClass, handlerName, context)
 
 		for (const guard of guards) {
 			const canActivate = await guard.canActivate(context)

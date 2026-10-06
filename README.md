@@ -206,6 +206,30 @@ Controllers, services, and modules are wired by decorators; use **guards** for a
 controller → global); anything no filter handles goes to `onError`. See the
 [documentation](https://honestjs.dev/docs/overview) for details.
 
+## Service scopes
+
+Services are singletons by default. Pass `scope` to `@Service()` to change that:
+
+```typescript
+import { RequestContext, Scope, Service } from '@kenzuya/honest'
+
+@Service({ scope: Scope.REQUEST })
+class CurrentUser {
+	constructor(private readonly request: RequestContext) {}
+
+	get id() {
+		return this.request.context.req.header('x-user-id')
+	}
+}
+```
+
+- `Scope.DEFAULT`: one instance for the whole application.
+- `Scope.REQUEST`: one instance per HTTP request. `RequestContext` gives access to the current Hono `Context`. Any
+  service or controller that depends on a request-scoped service is created per request as well.
+- `Scope.TRANSIENT`: a new instance for every injection.
+
+See the [DI scopes guide](src/di/README.md#scopes) for the full rules.
+
 ## Runtime Metadata Isolation
 
 Decorator metadata is still collected globally, but each application instance now runs on an immutable metadata snapshot

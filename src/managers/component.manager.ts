@@ -107,7 +107,13 @@ export class ComponentManager {
 				return (middlewareItem as IMiddleware).use.bind(middlewareItem)
 			}
 
-			const middleware = this.container.resolve(middlewareItem as Constructor<IMiddleware>)
+			const middlewareClass = middlewareItem as Constructor<IMiddleware>
+			if (this.container.isRequestScoped?.(middlewareClass)) {
+				const container = this.container
+				return (c: Context, next: Next) => container.resolve(middlewareClass, c).use(c, next)
+			}
+
+			const middleware = this.container.resolve(middlewareClass)
 			return middleware.use.bind(middleware)
 		})
 	}
@@ -128,19 +134,19 @@ export class ComponentManager {
 
 	// -- Guards --
 
-	resolveGuards(guardItems: GuardType[]): IGuard[] {
+	resolveGuards(guardItems: GuardType[], context?: Context): IGuard[] {
 		return guardItems.map((guardItem) => {
 			if (isObject(guardItem) && 'canActivate' in guardItem) {
 				return guardItem as IGuard
 			}
 
-			return this.container.resolve(guardItem as Constructor<IGuard>)
+			return this.container.resolve(guardItem as Constructor<IGuard>, context)
 		})
 	}
 
-	getHandlerGuards(controller: Constructor, handlerName: string | symbol): IGuard[] {
+	getHandlerGuards(controller: Constructor, handlerName: string | symbol, context?: Context): IGuard[] {
 		const guardItems = this.getComponents('guard', controller, handlerName)
-		return this.resolveGuards(guardItems as GuardType[])
+		return this.resolveGuards(guardItems as GuardType[], context)
 	}
 
 	// -- Pipes --
@@ -151,7 +157,13 @@ export class ComponentManager {
 				return pipeItem as IPipe
 			}
 
-			return this.container.resolve(pipeItem as Constructor<IPipe>)
+			const pipeClass = pipeItem as Constructor<IPipe>
+			if (this.container.isRequestScoped?.(pipeClass)) {
+				throw new Error(
+					`Pipe ${pipeClass.name} cannot be request-scoped: pipes are created once at startup. Remove Scope.REQUEST from it and its dependencies.`
+				)
+			}
+			return this.container.resolve(pipeClass)
 		})
 	}
 
@@ -222,7 +234,7 @@ export class ComponentManager {
 			if (isObject(filterItem) && 'catch' in filterItem) {
 				filter = filterItem as IFilter
 			} else {
-				filter = this.container.resolve(filterItem as Constructor<IFilter>)
+				filter = this.container.resolve(filterItem as Constructor<IFilter>, context)
 			}
 
 			try {
@@ -277,6 +289,10 @@ export class ComponentManager {
 
 		if (moduleOptions.services && moduleOptions.services.length > 0) {
 			for (const serviceClass of moduleOptions.services) {
+				// Request-scoped services are created lazily for each request
+				if (this.container.isRequestScoped?.(serviceClass)) {
+					continue
+				}
 				this.container.resolve(serviceClass)
 			}
 		}

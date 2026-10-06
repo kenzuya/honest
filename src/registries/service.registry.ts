@@ -1,3 +1,4 @@
+import type { Scope } from '../constants'
 import type { IServiceRegistry } from '../interfaces'
 import { MetadataRegistry } from './metadata.registry'
 import type { Constructor } from '../types'
@@ -8,5 +9,9 @@ import type { Constructor } from '../types'
 export class StaticServiceRegistry implements IServiceRegistry {
 	isService(service: Constructor): boolean {
 		return MetadataRegistry.isService(service)
+	}
+
+	getScope(service: Constructor): Scope {
+		return MetadataRegistry.getServiceScope(service)
 	}
 }
